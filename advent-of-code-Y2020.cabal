@@ -4,9 +4,9 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7f21ce218f801b653ff61e7f2917d428158f0d39729f13888a02735e4319b1b2
+-- hash: 93d6aabde32452c71ec5b99b3218617297401bd4d76d3d417fd96fdb5a43af18
 
-name:           advent-of-code-2020
+name:           advent-of-code-Y2020
 version:        0.1.0.0
 description:    Proper Chrimbo
 homepage:       https://github.com/michaelwebb76/advent-of-code-2020#readme
@@ -17,9 +17,6 @@ copyright:      2020 Michael Webb
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
-extra-source-files:
-    README.md
-    ChangeLog.md
 
 source-repository head
   type: git
@@ -45,19 +42,6 @@ executable advent-of-code-2020-exe
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      advent-of-code-2020
-    , base >=4.7 && <5
-  default-language: Haskell2010
-
-test-suite advent-of-code-2020-test
-  type: exitcode-stdio-1.0
-  main-is: Spec.hs
-  other-modules:
-      Paths_advent_of_code_Y2020
-  hs-source-dirs:
-      test
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      advent-of-code-2020
+      advent-of-code-Y2020
     , base >=4.7 && <5
   default-language: Haskell2010
