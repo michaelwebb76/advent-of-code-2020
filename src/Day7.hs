@@ -64,16 +64,31 @@ bagsContaining bagName bags =
         ++ concatMap (\(Bag name _) -> bagsContaining name bags) bagsDirectlyContaining
 
 part2Reducer :: [Input] -> Int
-part2Reducer =
-  sum . map fst . bagsContainedInside "shiny gold"
-
-bagsContainedInside :: String -> [Input] -> [(Int, Bag)]
-bagsContainedInside bagName bags =
-  case find (\(Bag name _) -> name == bagName) bags of
-    Just (Bag _ insideInside) ->
-      insideInside ++ concatMap (\(_, Bag insideName _) -> bagsContainedInside insideName bags) insideInside
+part2Reducer bags =
+  case findBagWithName "shiny gold" bags of
+    Just bag ->
+      bagsContainedInside bag bags
     Nothing ->
-      []
+      0
+
+findBagWithName :: String -> [Bag] -> Maybe Bag
+findBagWithName n = find (\(Bag searchName _) -> searchName == n)
+
+bagsContainedInside :: Bag -> [Input] -> Int
+bagsContainedInside (Bag _ bagsInside) allBags =
+  sum $
+    map
+      ( \(int, Bag bagsInsideName _) ->
+          case findBagWithName bagsInsideName allBags of
+            Just foundBag@(Bag _ insideInside) ->
+              case insideInside of
+                [] -> int
+                _ ->
+                  int + int * bagsContainedInside foundBag allBags
+            Nothing ->
+              0
+      )
+      bagsInside
 
 solution :: (Show a) => String -> (Input -> Bool) -> ([Input] -> a) -> IO ()
 solution unparsedInput matcher reducer =
@@ -140,6 +155,16 @@ dark olive bags contain 3 faded blue bags, 4 dotted black bags.
 vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.
 faded blue bags contain no other bags.
 dotted black bags contain no other bags.|]
+
+otherShortInput :: String
+otherShortInput =
+  [r|shiny gold bags contain 2 dark red bags.
+dark red bags contain 2 dark orange bags.
+dark orange bags contain 2 dark yellow bags.
+dark yellow bags contain 2 dark green bags.
+dark green bags contain 2 dark blue bags.
+dark blue bags contain 2 dark violet bags.
+dark violet bags contain no other bags.|]
 
 longInput :: String
 longInput =
