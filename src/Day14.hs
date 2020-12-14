@@ -48,7 +48,7 @@ part1Reducer =
 
 processPart1Input :: Solution -> Input -> Solution
 processPart1Input solutionSoFar (Input mask memoryWrites) =
-  let memoryWritesWithMask = Data.List.map (part1ApplyMask mask) memoryWrites
+  let memoryWritesWithMask = Data.List.map ((part1ApplyMask . reverse) mask) memoryWrites
    in Data.List.foldl
         ( \solutionSoFar memoryWrite ->
             uncurry Data.Map.insert memoryWrite solutionSoFar
@@ -59,15 +59,21 @@ processPart1Input solutionSoFar (Input mask memoryWrites) =
 part1ApplyMask :: Mask -> MemoryWrite -> MemoryWrite
 part1ApplyMask mask (loc, value) =
   ( loc,
-    Data.List.foldl
-      ( \newVal (maskBit, index) -> case maskBit of
-          Zero ->
-            clearBit newVal index
-          One ->
-            setBit newVal index
-      )
-      value
-      mask
+    snd $
+      Data.List.foldl
+        ( \(index, newVal) maskBit ->
+            ( index + 1,
+              case maskBit of
+                Zero ->
+                  clearBit newVal index
+                One ->
+                  setBit newVal index
+                X ->
+                  newVal
+            )
+        )
+        (0, value)
+        mask
   )
 
 part2Reducer :: [Input] -> Solution
@@ -76,7 +82,7 @@ part2Reducer =
 
 processPart2Input :: Solution -> Input -> Solution
 processPart2Input solutionSoFar (Input mask memoryWrites) =
-  let memoryWritesWithMask = Data.List.concatMap (part2ApplyMask mask) memoryWrites
+  let memoryWritesWithMask = Data.List.concatMap (part2ApplyMaskToMemoryWrite mask) memoryWrites
    in Data.List.foldl
         ( \solutionSoFar memoryWrite ->
             uncurry Data.Map.insert memoryWrite solutionSoFar
@@ -84,20 +90,33 @@ processPart2Input solutionSoFar (Input mask memoryWrites) =
         solutionSoFar
         memoryWritesWithMask
 
-part2ApplyMask :: Mask -> MemoryWrite -> [MemoryWrite]
-part2ApplyMask mask (loc, value) =
-  undefined
+part2ApplyMaskToMemoryWrite :: Mask -> MemoryWrite -> [MemoryWrite]
+part2ApplyMaskToMemoryWrite mask (loc, value) =
+  Data.List.map (,value) $ applyMaskToLoc mask loc
 
-solution :: (Show a) => String -> ([Input] -> a) -> IO ()
+applyMaskToLoc :: Mask -> Word64 -> [Word64]
+applyMaskToLoc [] _ = [0]
+applyMaskToLoc (maskBit : xs) loc =
+  let bitIndex = length xs
+      locBitSet = testBit loc bitIndex
+   in case maskBit of
+        Zero ->
+          Data.List.map (\x -> x + if locBitSet then bit bitIndex else 0) $ applyMaskToLoc xs loc
+        One ->
+          Data.List.map (\x -> x + bit bitIndex) $ applyMaskToLoc xs loc
+        X ->
+          Data.List.concatMap (\x -> [x + bit bitIndex, x]) $ applyMaskToLoc xs loc
+
+solution :: String -> ([Input] -> Solution) -> IO ()
 solution unparsedInput reducer =
   let parsedInput = parseString parseInput mempty unparsedInput
-   in print $ reducer <$> parsedInput
+   in print $ sum . elems <$> (reducer <$> parsedInput)
 
 -- Types
 
-data MaskBit = Zero | One deriving (Eq, Show)
+data MaskBit = Zero | One | X deriving (Eq, Show)
 
-type Mask = [(MaskBit, Int)]
+type Mask = [MaskBit]
 
 type MemoryWrite = (Word64, Word64)
 
@@ -117,23 +136,7 @@ parseInput =
 
 parseMask :: Parser Mask
 parseMask =
-  catMaybes
-    . snd
-    . mapAccumL
-      ( \index char ->
-          ( index + 1,
-            case char of
-              '0' ->
-                Just (Zero, index)
-              '1' ->
-                Just (One, index)
-              _ ->
-                Nothing
-          )
-      )
-      0
-    . reverse
-    <$> some (choice [char '0', char '1', char 'X'])
+  some (choice [Zero <$ char '0', One <$ char '1', X <$ char 'X'])
 
 parseMemoryWrite :: Parser MemoryWrite
 parseMemoryWrite =
@@ -148,10 +151,10 @@ parseMemoryWrite =
 
 shortInput :: String
 shortInput =
-  [r|mask = XXXXXXXXXXXXXXXXXXXXXXXXXXXXX1XXXX0X
-mem[8] = 11
-mem[7] = 101
-mem[8] = 0|]
+  [r|mask = 000000000000000000000000000000X1001X
+mem[42] = 100
+mask = 00000000000000000000000000000000X0XX
+mem[26] = 1|]
 
 longInput :: String
 longInput =
